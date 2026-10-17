@@ -1,0 +1,176 @@
+openapi: 3.0.3
+info:
+  title: SIGA-U Mini API - Módulos Académico y Caja
+  description: Especificación oficial de la API para el sistema SIGA-U Mini (Módulos Académico y Caja).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Servidor de desarrollo local
+
+tags:
+  - name: Académico
+    description: Operaciones del módulo académico
+  - name: Caja
+    description: Operaciones del módulo de caja y tesorería
+  - name: Sistema
+    description: Endpoints de monitoreo y diagnóstico
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      tags:
+        - Sistema
+      description: Retorna el estado del servicio y su disponibilidad.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Servicio saludable
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - timestamp
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2026-10-17T17:00:00Z"
+
+  /api/v1/alumnos-matriculados:
+    get:
+      summary: Lista alumnos matriculados por curso
+      tags:
+        - Académico
+      operationId: getAlumnosMatriculados
+      parameters:
+        - name: curso
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Código o nombre del curso a filtrar
+      responses:
+        '200':
+          description: Éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlumnosMatriculadosResponse'
+
+  /api/v1/caja/pagos:
+    post:
+      summary: Registrar un pago en caja
+      tags:
+        - Caja
+      operationId: registrarPagoCaja
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroPagoRequest'
+      responses:
+        '201':
+          description: Pago registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagoRegistradoResponse'
+
+components:
+  schemas:
+    AlumnoMatriculado:
+      type: object
+      required:
+        - id
+        - nombre
+        - curso
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: "Ana Pérez"
+        curso:
+          type: string
+          example: "comunicacion"
+
+    AlumnosMatriculadosResponse:
+      type: object
+      required:
+        - curso
+        - total_encontrados
+        - alumnos
+      properties:
+        curso:
+          type: string
+          example: "comunicacion"
+        total_encontrados:
+          type: integer
+          example: 2
+        alumnos:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlumnoMatriculado'
+
+    RegistroPagoRequest:
+      type: object
+      required:
+        - alumno_id
+        - monto
+        - concepto
+      properties:
+        alumno_id:
+          type: integer
+          example: 1
+        monto:
+          type: number
+          format: float
+          example: 150.00
+        concepto:
+          type: string
+          example: "Matrícula Semestre 2026-I"
+
+    PagoData:
+      type: object
+      required:
+        - pago_id
+        - alumno_id
+        - monto
+        - concepto
+        - estado
+      properties:
+        pago_id:
+          type: integer
+          example: 1
+        alumno_id:
+          type: integer
+          example: 1
+        monto:
+          type: number
+          example: 150.00
+        concepto:
+          type: string
+          example: "Matrícula Semestre 2026-I"
+        estado:
+          type: string
+          example: "registrado"
+
+    PagoRegistradoResponse:
+      type: object
+      required:
+        - mensaje
+        - data
+      properties:
+        mensaje:
+          type: string
+          example: "Pago registrado exitosamente en caja"
+        data:
+          $ref: '#/components/schemas/PagoData'

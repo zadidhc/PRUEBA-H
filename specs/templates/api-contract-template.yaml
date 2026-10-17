@@ -1,0 +1,169 @@
+openapi: 3.1.0
+info:
+  title: Service API Specification
+  description: Official interface contract for the service following Spec-First principles.
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+    description: Production Server
+  - url: http://localhost:8080/v1
+    description: Local Development Server
+
+tags:
+  - name: Resources
+    description: Operations related to core resources
+
+paths:
+  /resources:
+    get:
+      summary: List resources
+      tags:
+        - Resources
+      operationId: listResources
+      parameters:
+        - name: limit
+          in: query
+          description: Max items to return
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: cursor
+          in: query
+          description: Pagination cursor
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of items retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create resource
+      tags:
+        - Resources
+      operationId: createResource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResourceRequest'
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceItem'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+components:
+  schemas:
+    ResourceItem:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+        name:
+          type: string
+          example: "Primary Resource"
+        description:
+          type: string
+          nullable: true
+          example: "Details regarding the item"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-10-17T12:00:00Z"
+
+    CreateResourceRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+
+    ResourceListResponse:
+      type: object
+      required:
+        - data
+        - hasMore
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceItem'
+        nextCursor:
+          type: string
+          nullable: true
+        hasMore:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "https://example.com/errors/invalid-input"
+        title:
+          type: string
+          example: "Invalid Request"
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: "The field 'name' cannot be blank."
+        instance:
+          type: string
+          format: uri
+          example: "/resources/123"
+
+  responses:
+    BadRequestError:
+      description: Bad request details
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Schema validation failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
